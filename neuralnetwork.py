@@ -1,25 +1,38 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+import time
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision import datasets
 from torchvision.transforms import transforms
 class NN (nn.Module):
-    def __init__(self,input_size,class_NUM):
+    def __init__(self,input_size,class_NUM,input_wh=None):
         super(NN, self).__init__()
         # self.fc1=nn.Linear(input_size,10)
         # self.fc2=nn.Linear(10,class_NUM)
+        # self.block = nn.Sequential(
+        #     nn.Linear(input_size, 20),
+        #     nn.ReLU(inplace=True),
+        #     nn.Linear(20,class_NUM),
+        # )
         self.block = nn.Sequential(
-            nn.Linear(input_size, 200),
-            nn.ReLU(inplace=True),
-            nn.Linear(200,class_NUM),
+            nn.Conv2d(1,20,input_wh,bias=False),
+            # nn.ReLU(inplace=True),
+            nn.Conv2d(20,class_NUM,1,bias=False)
+
         )
+
 
     def forward(self, x):
         # x=F.relu(self.fc1(x))
         # x=self.fc2(x)
-        return self.block(x)
+        # print('input:',x.size())
+        x=self.block(x)
+        # print(x.size())
+        x=x.view(x.size(0), -1)
+        # print(x.size())
+        return x
+
 
 # model=NN(1000,5)
 # x=torch.randn(22,1000)#1000 是一维的
@@ -35,16 +48,18 @@ train_set=datasets.MNIST(root='dataset/',train=True,transform=transforms.ToTenso
 train_loader=DataLoader(train_set,batch_size,shuffle=True)
 test_set=datasets.MNIST(root='dataset/',train=False,transform=transforms.ToTensor(),download=True)
 test_loader=DataLoader(test_set,batch_size,shuffle=True)
-model=NN(input_size,class_NUM).to(device)
+model=NN(input_size,class_NUM,28).to(device)
+total = sum([param.nelement() for param in model.parameters()])
+print(total)
 loss_function=nn.CrossEntropyLoss()
 optimizer=optim.Adam(model.parameters(),lr=learning_rate)
 scaler = torch.cuda.amp.GradScaler()
-
+curtime=time.time()
 for singleepoch in range(epoch):
     for batch_idx, (img,label) in enumerate(train_loader):
         img=img.to(device)
         label=label.to(device)
-        img=img.reshape(img.shape[0],-1)
+        # img=img.reshape(img.shape[0],-1)
 
 
         with torch.cuda.amp.autocast():
@@ -62,7 +77,7 @@ for singleepoch in range(epoch):
         # optimizer.zero_grad()
         # loss.backward()
         # optimizer.step()
-
+print('time',time.time()-curtime)
 def check_acc(loader,model):
     num_correct=0
     num_sample=0
@@ -71,7 +86,7 @@ def check_acc(loader,model):
         for (img, label) in loader:
             img = img.to(device)
             label = label.to(device)
-            img = img.reshape(img.shape[0], -1)
+            # img = img.reshape(img.shape[0], -1)
 
             x = model(img)
             _,preds=x.max(1)
