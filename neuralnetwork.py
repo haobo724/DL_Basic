@@ -16,9 +16,19 @@ class NN (nn.Module):
         #     nn.Linear(20,class_NUM),
         # )
         self.block = nn.Sequential(
-            nn.Conv2d(1,20,input_wh,bias=False),
-            # nn.ReLU(inplace=True),
-            nn.Conv2d(20,class_NUM,1,bias=False)
+            nn.Conv2d(1,10,3,bias=False),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2),
+            nn.Conv2d(10, 20, 3, bias=False),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2),
+
+            nn.Conv2d(20,40,3,bias=False),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2),
+
+            nn.Conv2d(40,class_NUM,1,bias=False),
+            # nn.Conv2d(class_NUM, class_NUM, 1, bias=False),
 
         )
 
@@ -28,7 +38,6 @@ class NN (nn.Module):
         # x=self.fc2(x)
         # print('input:',x.size())
         x=self.block(x)
-        # print(x.size())
         x=x.view(x.size(0), -1)
         # print(x.size())
         return x
@@ -98,4 +107,4 @@ def check_acc(loader,model):
     return num_correct/num_sample
 
 check_acc(test_loader,model)
-check_acc(train_loader,model)
+# check_acc(train_loader,model)
