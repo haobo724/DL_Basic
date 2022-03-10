@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
-import time
+import time,glob,cv2
 import torch.optim as optim
+
 from torch.utils.data import DataLoader
 from torchvision import datasets
 from torchvision.transforms import transforms
@@ -26,6 +27,8 @@ class NN (nn.Module):
             nn.Conv2d(20,40,3,bias=False),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=2),
+            nn.AdaptiveAvgPool2d( (1, 1)),
+
 
             nn.Conv2d(40,class_NUM,1,bias=False),
             # nn.Conv2d(class_NUM, class_NUM, 1, bias=False),
@@ -51,7 +54,7 @@ device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 learning_rate=1e-3
 input_size=784
 class_NUM=10
-epoch=2
+epoch=3
 batch_size=64
 train_set=datasets.MNIST(root='dataset/',train=True,transform=transforms.ToTensor(),download=True)
 train_loader=DataLoader(train_set,batch_size,shuffle=True)
@@ -96,15 +99,32 @@ def check_acc(loader,model):
             img = img.to(device)
             label = label.to(device)
             # img = img.reshape(img.shape[0], -1)
-
             x = model(img)
             _,preds=x.max(1)
-
+            # print(label)
+            # print(preds)
             num_correct+=(preds==label).sum()
             num_sample+=preds.size(0)
         print(f"acc{num_correct/num_sample}")
     model.train()
     return num_correct/num_sample
+def test_img(model):
+    img = glob.glob('./*.jpg')
+    print(img)
+    for i in img:
+        i = cv2.imread(i,0)
+        print(i.shape)
+        i = cv2.resize(i,(28,28))
+        i = torch.FloatTensor(i)
+        i = torch.unsqueeze(i,dim=0)
+        i = torch.unsqueeze(i,dim=0)
+        i = i.to(device)
+        print(i.size())
+        x = model(i)
+        print(x.size())
+        _, preds = x.max(1)
+        print(preds)
 
 check_acc(test_loader,model)
+test_img(model)
 # check_acc(train_loader,model)
