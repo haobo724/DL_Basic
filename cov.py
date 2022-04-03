@@ -10,7 +10,10 @@ class NN (nn.Module):
         super(NN, self).__init__()
         self.cov1=nn.Conv2d(1,10,3,1,1,bias=False)
         self.cov2=nn.Conv2d(10,22,3,1,1,bias=False)
-        self.cov3=nn.Conv2d(22, 10, 1, bias=False)
+        self.cov3=nn.Conv2d(22, class_NUM, 1, bias=False)
+        a = 123
+
+        self.cov_test=nn.Conv2d(1, 10, 5,stride=1,padding=2,bias=False)
 
         # self.fc2=nn.Linear(10,class_NUM)
         # self.block = nn.Sequential(
@@ -28,15 +31,17 @@ class NN (nn.Module):
             nn.MaxPool2d(kernel_size=2),
             nn.Conv2d(20,40,5,bias=False),
 
-            # nn.ReLU(inplace=True),
-            # nn.MaxPool2d(kernel_size=2),
-            # nn.Conv2d(40,10,3,bias=False),
-            # nn.Conv2d(class_NUM, class_NUM, 1, bias=False),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2),
+            nn.Conv2d(40,class_NUM,3,bias=False),
+            nn.Conv2d(class_NUM, class_NUM, 1, bias=False),
 
         )
 
 
     def forward(self, x):
+        x = self.cov_test(x)
+        print(x.size())
         # x=F.relu(self.fc1(x))
         # x=self.fc2(x)
         # print('input:',x.size())
@@ -45,9 +50,9 @@ class NN (nn.Module):
         # x=self.cov2(x)
         # print(x.size())
         # x = self.cov3(x)
-        x = self.block(x)
-        print(x.size())
-        x=x.view(x.size(0), -1)
+        # x = self.block(x)
+        # print(x.size())
+        # x=x.view(x.size(0), -1)
         # print(x.size())
         return x
 model=NN(1000,5)
