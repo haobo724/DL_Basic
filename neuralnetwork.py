@@ -6,6 +6,8 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision import datasets
 from torchvision.transforms import transforms
+from codecarbon import EmissionsTracker
+
 class NN (nn.Module):
     def __init__(self,input_size,class_NUM,input_wh=None):
         super(NN, self).__init__()
@@ -67,28 +69,31 @@ loss_function=nn.CrossEntropyLoss()
 optimizer=optim.Adam(model.parameters(),lr=learning_rate)
 scaler = torch.cuda.amp.GradScaler()
 curtime=time.time()
-for singleepoch in range(epoch):
-    for batch_idx, (img,label) in enumerate(train_loader):
-        img=img.to(device)
-        label=label.to(device)
-        # img=img.reshape(img.shape[0],-1)
+
+with EmissionsTracker() as tracker:
+
+    for singleepoch in range(epoch):
+        for batch_idx, (img,label) in enumerate(train_loader):
+            img=img.to(device)
+            label=label.to(device)
+            # img=img.reshape(img.shape[0],-1)
 
 
-        with torch.cuda.amp.autocast():
-            predictions = model(img)
-            loss = loss_function(predictions, label)
-        # print("img",img.shape)
-        # print("label",label.shape)
-        # x=model(img)
-        # loss=loss_function(x,label)
-        optimizer.zero_grad()
-        scaler.scale(loss).backward()
-        scaler.step(optimizer)
-        scaler.update()
+            with torch.cuda.amp.autocast():
+                predictions = model(img)
+                loss = loss_function(predictions, label)
+            # print("img",img.shape)
+            # print("label",label.shape)
+            # x=model(img)
+            # loss=loss_function(x,label)
+            optimizer.zero_grad()
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
 
-        # optimizer.zero_grad()
-        # loss.backward()
-        # optimizer.step()
+            # optimizer.zero_grad()
+            # loss.backward()
+            # optimizer.step()
 print('time',time.time()-curtime)
 def check_acc(loader,model):
     num_correct=0
@@ -125,6 +130,6 @@ def test_img(model):
         _, preds = x.max(1)
         print(preds)
 
-check_acc(test_loader,model)
-test_img(model)
+# check_acc(test_loader,model)
+# test_img(model)
 # check_acc(train_loader,model)
