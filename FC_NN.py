@@ -62,11 +62,11 @@ test_loader = DataLoader(test_set, batch_size, shuffle=True)
 model = NN(input_size, class_NUM).to(device)
 model_FC = FC(28, class_NUM).to(device)
 loss_function = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 scaler = torch.cuda.amp.GradScaler()
+used_model = model_FC
+optimizer = optim.Adam(used_model.parameters(), lr=learning_rate)
 # 代码注释部分并非错误而是比基础还基础的写法，我改用稍复杂、更实用的结构来替换
 with EmissionsTracker() as tracker:
-    used_model = model
     print("parameter:", sum(p.numel() for p in used_model.parameters() if p.requires_grad))
     for singleepoch in range(epoch):
         for batch_idx, (img, label) in enumerate(train_loader):
@@ -82,14 +82,14 @@ with EmissionsTracker() as tracker:
             # print("label",label.shape)
             # x=model(img)
             # loss=loss_function(x,label)
-            # optimizer.zero_grad()
-            # scaler.scale(loss).backward()
-            # scaler.step(optimizer)
-            # scaler.update()
-
             optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
+
+            # optimizer.zero_grad()
+            # loss.backward()
+            # optimizer.step()
 
 
 # 记得加上eval（）和train（），因为网络在这两种模式下可以决定有一些层要不要使用，比如dropout等，正确开关可以提高正确率
@@ -101,9 +101,8 @@ def check_acc(loader, model):
         for (img, label) in loader:
             img = img.to(device)
             label = label.to(device)
-            # 同理如果使用全卷积层，下面这行就要注释掉
-
-            img = img.reshape(img.shape[0], -1)
+            if used_model._get_name() == 'NN':
+                img = img.reshape(img.shape[0], -1)
             # x就是数据过model的结果，根据我们的网络架构我们知道一共有十个class（列）【0...9】,数据（行）有多少个呢，根据loader决定
             x = model(img)
             # 很有启发的写法，直接一步得出每一行最大值所属坐标，preds将会是batchsize长的list，里面记录着每一行最大值坐标
@@ -118,5 +117,5 @@ def check_acc(loader, model):
     return num_correct / num_sample
 
 
-check_acc(test_loader, model)
-check_acc(train_loader, model)
+check_acc(test_loader, used_model)
+check_acc(train_loader, used_model)
