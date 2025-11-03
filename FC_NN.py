@@ -6,7 +6,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision import datasets
 from torchvision.transforms import transforms
-
+import time
 
 class NN(nn.Module):
     def __init__(self, input_size, class_NUM):
@@ -52,7 +52,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 learning_rate = 1e-3
 input_size = 784
 class_NUM = 10
-epoch = 2
+epoch = 50
 batch_size = 64
 train_set = datasets.MNIST(root='dataset/', train=True, transform=transforms.ToTensor(), download=True)
 train_loader = DataLoader(train_set, batch_size, shuffle=True)
@@ -63,6 +63,7 @@ model_FC = FC(input_size, class_NUM).to(device)
 loss_function = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 scaler = torch.cuda.amp.GradScaler()
+start_time = time.time()
 # 代码注释部分并非错误而是比基础还基础的写法，我改用稍复杂、更实用的结构来替换
 for singleepoch in range(epoch):
     for batch_idx, (img, label) in enumerate(train_loader):
@@ -87,6 +88,7 @@ for singleepoch in range(epoch):
         # loss.backward()
         # optimizer.step()
 
+print("used time:", time.time() - start_time)
 
 # 记得加上eval（）和train（），因为网络在这两种模式下可以决定有一些层要不要使用，比如dropout等，正确开关可以提高正确率
 def check_acc(loader, model):
@@ -114,5 +116,5 @@ def check_acc(loader, model):
     return num_correct / num_sample
 
 
-check_acc(test_loader, model)
-check_acc(train_loader, model)
+# check_acc(test_loader, model)
+# check_acc(train_loader, model)

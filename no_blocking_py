@@ -1,0 +1,56 @@
+import cv2
+from tkinter import Tk, Label
+from PIL import Image, ImageTk
+import threading
+
+class App:
+    def __init__(self, window, window_title, video_source=0):
+        self.window = window
+        self.window.title(window_title)
+        self.video_source = video_source
+
+        # 初始化摄像头
+        self.vid = cv2.VideoCapture(video_source)
+        if not self.vid.isOpened():
+            raise ValueError("Unable to open video source", video_source)
+
+        # 创建一个Canvas来放置视频帧
+        self.canvas = Label(window)
+        self.canvas.pack()
+
+        # 绑定空格键到save_snapshot方法
+        self.window.bind('<space>', self.save_snapshot)
+
+        # 视频流中的帧捕获和更新
+        self.update_frame()
+
+        self.window.mainloop()
+
+    def update_frame(self):
+        # 从视频流中读取帧
+        ret, frame = self.vid.read()
+        self.current_frame = frame  # 保存当前帧，以便稍后保存
+        if ret:
+            # 将帧转换为Tkinter的PhotoImage格式
+            self.photo = ImageTk.PhotoImage(image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)))
+            self.canvas.configure(image=self.photo)
+            self.canvas.image = self.photo
+
+        # 每10毫秒调用自身获取下一帧
+        self.window.after(10, self.update_frame)
+
+    def save_snapshot(self, event=None):
+        # 按空格键时保存当前帧
+        if self.current_frame is not None:
+            cv2.imwrite('snapshot.jpg', self.current_frame)
+            print("Snapshot saved as 'snapshot.jpg'")
+
+    # 释放摄像头资源
+    def __del__(self):
+        if self.vid.isOpened():
+            self.vid.release()
+
+# 创建窗口并运行应用
+if __name__ == "__main__":
+    root = Tk()
+    app = App(root, "Tkinter and OpenCV")
